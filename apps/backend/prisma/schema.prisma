@@ -1,0 +1,163 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =====================
+// User Model
+// =====================
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String
+  firstName         String
+  lastName          String
+  role              UserRole @default(EMPLOYEE)
+  isActive          Boolean  @default(true)
+  
+  // Relations
+  createdShipments  Shipment[] @relation("CreatedBy")
+  updatedShipments  Shipment[] @relation("UpdatedBy")
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+// =====================
+// Shipment Model
+// =====================
+model Shipment {
+  id                    String      @id @default(cuid())
+  trackingNumber        String      @unique
+  shipperName           String
+  shipperPhone          String?
+  shipperEmail          String?
+  
+  consigneeName         String
+  consigneePhone        String?
+  consigneeEmail        String?
+  
+  pickupLocationId      String
+  pickupLocation        Location    @relation("PickupLocation", fields: [pickupLocationId], references: [id])
+  
+  deliveryLocationId    String
+  deliveryLocation      Location    @relation("DeliveryLocation", fields: [deliveryLocationId], references: [id])
+  
+  carrierName           String
+  carrierPhone          String?
+  
+  weight                Float?      // in kg
+  dimensionsId          String?
+  dimensions            Dimensions? @relation(fields: [dimensionsId], references: [id])
+  
+  rate                  Float
+  currency              String      @default("USD")
+  
+  status                ShipmentStatus @default(PENDING)
+  isFlagged             Boolean     @default(false)
+  flagReason            String?
+  
+  pickupDate            DateTime?
+  estimatedDelivery     DateTime?
+  actualDelivery        DateTime?
+  
+  notes                 String?
+  
+  // Relations
+  createdById           String
+  createdBy             User        @relation("CreatedBy", fields: [createdById], references: [id])
+  
+  updatedById           String
+  updatedBy             User        @relation("UpdatedBy", fields: [updatedById], references: [id])
+  
+  trackingEvents        TrackingEvent[]
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@map("shipments")
+}
+
+enum ShipmentStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+  ON_HOLD
+  RETURNED
+}
+
+// =====================
+// Location Model
+// =====================
+model Location {
+  id            String      @id @default(cuid())
+  city          String
+  state         String
+  country       String
+  postalCode    String
+  address       String
+  latitude      Float?
+  longitude     Float?
+  
+  // Relations
+  pickupShipments   Shipment[] @relation("PickupLocation")
+  deliveryShipments Shipment[] @relation("DeliveryLocation")
+  trackingEvents    TrackingEvent[]
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("locations")
+}
+
+// =====================
+// Dimensions Model
+// =====================
+model Dimensions {
+  id        String   @id @default(cuid())
+  length    Float    // in cm
+  width     Float    // in cm
+  height    Float    // in cm
+  
+  shipments Shipment[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("dimensions")
+}
+
+// =====================
+// TrackingEvent Model
+// =====================
+model TrackingEvent {
+  id            String   @id @default(cuid())
+  shipmentId    String
+  shipment      Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  
+  status        String   // e.g., "Picked up", "In transit", "Delivered"
+  timestamp     DateTime @default(now())
+  
+  locationId    String?
+  location      Location? @relation(fields: [locationId], references: [id])
+  
+  description   String?
+  
+  createdAt     DateTime @default(now())
+
+  @@map("tracking_events")
+}
