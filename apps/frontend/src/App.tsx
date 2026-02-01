@@ -3,6 +3,10 @@ import { useAuth } from './contexts/AuthContext'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ShipmentsPage from './pages/ShipmentsPage'
+import UsersPage from './pages/UsersPage'
+import AnalyticsPage from './pages/AnalyticsPage'
+import AnalyticsReportsPage from './pages/AnalyticsReportsPage'
+import SettingsPage from './pages/SettingsPage'
 import MainLayout from './components/layout/MainLayout'
 import ShipmentDetail from './components/shipments/ShipmentDetail'
 import ShipmentForm from './components/shipments/ShipmentForm'
@@ -45,6 +49,10 @@ function App() {
                 <Route path="/shipments/new" element={<ShipmentForm />} />
                 <Route path="/shipments/:id" element={<ShipmentDetail />} />
                 <Route path="/shipments/:id/edit" element={<ShipmentForm />} />
+                <Route path="/users" element={<UsersPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/analytics/reports" element={<AnalyticsReportsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
               </Routes>
             </MainLayout>
           </ProtectedRoute>
