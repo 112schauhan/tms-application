@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@apollo/client/react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { GET_SHIPMENTS } from '../graphql/operations';
+import { useSystemSettings } from '../contexts/SystemSettingsContext';
 import ShipmentGrid from '../components/shipments/ShipmentGrid';
 import ShipmentTile from '../components/shipments/ShipmentTile';
 import ExchangeRateWidget from '../components/widgets/ExchangeRateWidget';
@@ -46,13 +47,14 @@ const SORT_OPTIONS = [
 ];
 
 export default function ShipmentsPage() {
+  const { settings } = useSystemSettings();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>(settings.defaultShipmentView);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') || '');
   const [sortIndex, setSortIndex] = useState(0);
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const limit = settings.paginationLimit;
 
   const sort = SORT_OPTIONS[sortIndex];
 
@@ -126,7 +128,7 @@ export default function ShipmentsPage() {
           </p>
         </div>
         <div className="lg:w-72 flex flex-col gap-4 flex-shrink-0">
-          <ExchangeRateWidget />
+          {settings.showExchangeRate && <ExchangeRateWidget />}
           <Link
             to="/shipments/new"
             className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all"
