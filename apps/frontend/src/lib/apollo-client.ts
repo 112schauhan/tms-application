@@ -6,6 +6,8 @@ import {
 } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
+import { CombinedGraphQLErrors } from '@apollo/client/errors';
+import { from as rxFrom, switchMap } from 'rxjs';
 // GraphQL endpoint: VITE_GRAPHQL_URL from .env, or /graphql (proxied via Vite - no CORS)
 const graphqlUri = import.meta.env.VITE_GRAPHQL_URL || '/graphql';
 if (import.meta.env.DEV) {
@@ -27,26 +29,80 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
-  if (graphQLErrors) {
-    graphQLErrors.forEach((error) => {
-      const { message, locations, path, extensions } = error;
-      console.error(
-        `[GraphQL error]: Message: ${message}, Location: ${JSON.stringify(locations)}, Path: ${path}`
-      );
-      // Handle authentication errors
-      if (extensions?.code === 'UNAUTHENTICATED') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
-      }
+async function tryRefreshToken(): Promise<boolean> {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) return false;
+
+  try {
+    const res = await fetch(graphqlUri, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        query: `mutation RefreshToken($token: String!) {
+          refreshToken(token: $token) {
+            accessToken
+            refreshToken
+            user { id email firstName lastName role isActive createdAt }
+          }
+        }`,
+        variables: { token: refreshToken },
+      }),
     });
+    const json = await res.json();
+    const data = json.data?.refreshToken;
+    if (data?.accessToken && data?.refreshToken) {
+      localStorage.setItem('accessToken', data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      return true;
+    }
+  } catch (err) {
+    console.warn('[Auth] Refresh token failed:', err);
+  }
+  return false;
+}
+
+function logoutAndRedirect() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login';
+  }
+}
+
+const errorLink = onError(({ error, operation, forward }) => {
+  const hasAuthError =
+    (CombinedGraphQLErrors.is(error) &&
+      error.errors.some(
+        (e: { extensions?: { code?: string }; message?: string }) =>
+          e.extensions?.code === 'UNAUTHENTICATED' ||
+          e.message?.includes('logged in')
+      )) ||
+    (!CombinedGraphQLErrors.is(error) && error?.message?.includes('logged in'));
+
+  if (hasAuthError) {
+    const opName = operation.operationName;
+    if (opName === 'RefreshToken') {
+      logoutAndRedirect();
+      return forward(operation);
+    }
+
+    return rxFrom(tryRefreshToken()).pipe(
+      switchMap((refreshed) => {
+        if (!refreshed) logoutAndRedirect();
+        return forward(operation);
+      })
+    );
   }
 
-  if (networkError) {
-    console.error(`[Network error]: ${networkError}`);
+  if (CombinedGraphQLErrors.is(error)) {
+    error.errors.forEach((e: { message?: string; locations?: unknown; path?: unknown }) => {
+      console.error(
+        `[GraphQL error]: Message: ${e.message}, Location: ${JSON.stringify(e.locations)}, Path: ${e.path}`
+      );
+    });
+  } else {
+    console.error(`[Network error]: ${error}`);
   }
 
   return forward(operation);

@@ -198,6 +198,19 @@ export const LOGOUT = gql`
   }
 `;
 
+export const REFRESH_TOKEN = gql`
+  ${USER_FRAGMENT}
+  mutation RefreshToken($token: String!) {
+    refreshToken(token: $token) {
+      accessToken
+      refreshToken
+      user {
+        ...UserFragment
+      }
+    }
+  }
+`;
+
 export const CREATE_SHIPMENT = gql`
   ${SHIPMENT_FRAGMENT}
   mutation CreateShipment($input: CreateShipmentInput!) {
