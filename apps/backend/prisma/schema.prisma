@@ -93,7 +93,9 @@ model Shipment {
 
 enum ShipmentStatus {
   PENDING
+  PICKED_UP
   IN_TRANSIT
+  OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
   ON_HOLD

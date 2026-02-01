@@ -37,15 +37,15 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-xl">
         {/* Logo */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-8">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-5">
             <div className="p-5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-3xl shadow-xl">
               <Package className="w-14 h-14 text-white" strokeWidth={2} />
             </div>
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4 tracking-tight">
+          <h1 className="text-5xl font-bold text-gray-900 mb-3 tracking-tight">
             {isLogin ? 'Welcome back' : 'Create account'}
           </h1>
           <p className="text-lg text-gray-600">
@@ -56,7 +56,7 @@ export default function LoginPage() {
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-3xl shadow-2xl px-12 py-12 border border-gray-100">
+        <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 px-6 py-6 sm:px-14 sm:py-16">
           {error && (
             <div className="mb-8 p-5 bg-red-50 border border-red-200 rounded-2xl flex items-start text-red-700">
               <AlertCircle className="w-6 h-6 mr-3 flex-shrink-0 mt-0.5" />
@@ -64,11 +64,11 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-7">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && (
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-semibold text-gray-800 mb-3">
+                  <label htmlFor="firstName" className="block text-sm font-semibold text-gray-800 mb-2">
                     First name
                   </label>
                   <div className="relative">
@@ -85,7 +85,7 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-semibold text-gray-800 mb-3">
+                  <label htmlFor="lastName" className="block text-sm font-semibold text-gray-800 mb-2">
                     Last name
                   </label>
                   <div className="relative">
@@ -105,7 +105,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-3">
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-2">
                 Email address
               </label>
               <div className="relative">
@@ -123,7 +123,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-3">
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -159,7 +159,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-10 text-center">
+          <div className="mt-14 text-center">
             <button
               type="button"
               onClick={() => {
@@ -176,23 +176,25 @@ export default function LoginPage() {
 
           {/* Demo credentials */}
           {isLogin && (
-            <div className="mt-10 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-100">
-              <p className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wide">Demo Credentials</p>
-              <div className="space-y-3 text-sm text-gray-700">
-                <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
-                  <span className="font-semibold text-gray-900">Admin:</span>
-                  <div className="flex gap-2">
-                    <code className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 font-mono text-xs">admin@tms.com</code>
-                    <code className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 font-mono text-xs">admin123</code>
+            <div className="mt-14 pt-12 border-t border-gray-200">
+              <div className="p-6 sm:p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-100">
+                <p className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wide">Demo Credentials</p>
+                <div className="space-y-4 text-sm text-gray-700">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white p-4 rounded-xl shadow-sm">
+                  <span className="font-semibold text-gray-900 w-20 flex-shrink-0">Admin:</span>
+                  <div className="flex flex-wrap gap-2">
+                    <code className="bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 font-mono text-xs">admin@tms.com</code>
+                    <code className="bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 font-mono text-xs">admin123</code>
                   </div>
                 </div>
-                <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
-                  <span className="font-semibold text-gray-900">Employee:</span>
-                  <div className="flex gap-2">
-                    <code className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 font-mono text-xs">employee@tms.com</code>
-                    <code className="bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 font-mono text-xs">employee123</code>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white p-4 rounded-xl shadow-sm">
+                  <span className="font-semibold text-gray-900 w-20 flex-shrink-0">Employee:</span>
+                  <div className="flex flex-wrap gap-2">
+                    <code className="bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 font-mono text-xs">employee@tms.com</code>
+                    <code className="bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 font-mono text-xs">employee123</code>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           )}

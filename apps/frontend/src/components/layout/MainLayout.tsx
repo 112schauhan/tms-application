@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   Menu,
@@ -29,7 +29,11 @@ const navItems: NavItem[] = [
   { label: 'Settings', to: '/settings', icon: Settings },
 ];
 
-export default function MainLayout() {
+interface MainLayoutProps {
+  children?: ReactNode;
+}
+
+export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout, isAdmin } = useAuth();
   const location = useLocation();
@@ -196,7 +200,7 @@ export default function MainLayout() {
 
         {/* Page content */}
         <main className="p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
