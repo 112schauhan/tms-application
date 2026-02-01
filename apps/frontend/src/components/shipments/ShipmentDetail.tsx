@@ -363,7 +363,7 @@ export default function ShipmentDetail() {
         ) : (
           <div className="space-y-4">
             {shipment.trackingEvents.map((event, index) => (
-              <div key={event.id} className="flex gap-4">
+              <div key={`${event.id}-${index}`} className="flex gap-4">
                 <div className="flex flex-col items-center">
                   <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
                   {index < shipment.trackingEvents.length - 1 && (

@@ -209,9 +209,9 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {recentShipments.map((shipment: Shipment) => (
+            {recentShipments.map((shipment: Shipment, index: number) => (
               <Link
-                key={shipment.id}
+                key={`${shipment.id}-${index}`}
                 to={`/shipments/${shipment.id}`}
                 className="flex items-center px-6 py-4 hover:bg-gray-50 transition-colors"
               >
