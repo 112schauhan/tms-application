@@ -1,3 +1,4 @@
+import DataLoader from 'dataloader';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
@@ -5,6 +6,33 @@ import jwt from 'jsonwebtoken';
 import type { Request } from 'express';
 
 import { env } from '../config/environment.js';
+
+// DataLoader: batches N individual loads into 1 batched query (N+1 optimization)
+function createUserLoader(prisma: PrismaClient) {
+  return new DataLoader<string, { id: string; email: string; firstName: string; lastName: string; role: string; isActive: boolean; createdAt: Date; updatedAt: Date } | null>(
+    async (ids) => {
+      const users = await prisma.user.findMany({
+        where: { id: { in: [...ids] } },
+        select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true, createdAt: true, updatedAt: true },
+      });
+      const map = new Map(users.map((u) => [u.id, u]));
+      return ids.map((id) => map.get(id) ?? null);
+    }
+  );
+}
+
+function createLocationLoader(prisma: PrismaClient) {
+  return new DataLoader<string, { id: string; address: string; city: string; state: string | null; country: string; postalCode: string | null; latitude: number | null; longitude: number | null } | null>(
+    async (ids) => {
+      const locations = await prisma.location.findMany({
+        where: { id: { in: [...ids] } },
+        select: { id: true, address: true, city: true, state: true, country: true, postalCode: true, latitude: true, longitude: true },
+      });
+      const map = new Map(locations.map((l) => [l.id, l]));
+      return ids.map((id) => map.get(id) ?? null);
+    }
+  );
+}
 
 // Prevent multiple instances of Prisma Client in development
 const globalForPrisma = globalThis as unknown as {
@@ -48,6 +76,8 @@ export interface User {
 export interface GraphQLContext {
   prisma: PrismaClient;
   user: User | null;
+  userLoader: ReturnType<typeof createUserLoader>;
+  locationLoader: ReturnType<typeof createLocationLoader>;
 }
 
 // Create context for each request
@@ -89,7 +119,12 @@ export async function createContext({ req }: { req: Request }): Promise<GraphQLC
     }
   }
 
-  return { prisma, user };
+  return {
+    prisma,
+    user,
+    userLoader: createUserLoader(prisma),
+    locationLoader: createLocationLoader(prisma),
+  };
 }
 
 // Graceful shutdown

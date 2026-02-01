@@ -143,7 +143,7 @@ export const resolvers = {
         orderBy.createdAt = 'desc';
       }
 
-      // Execute queries
+      // Execute queries - exclude createdBy, pickupLocation, deliveryLocation to use DataLoader (N+1 optimization)
       const [shipments, totalCount] = await Promise.all([
         context.prisma.shipment.findMany({
           where,
@@ -151,24 +151,52 @@ export const resolvers = {
           skip,
           take: limit,
           include: {
-            pickupLocation: true,
-            deliveryLocation: true,
             dimensions: true,
             trackingEvents: {
               include: { location: true },
               orderBy: { timestamp: 'desc' },
             },
-            createdBy: true,
-            updatedBy: true,
           },
         }),
         context.prisma.shipment.count({ where }),
       ]);
 
+      // Load relations via DataLoader (batches N loads into 1 query per type)
+      const pickupIds = [...new Set(shipments.map((s) => s.pickupLocationId))];
+      const deliveryIds = [...new Set(shipments.map((s) => s.deliveryLocationId))];
+      const createdByIds = [...new Set(shipments.map((s) => s.createdById))];
+      const updatedByIds = [...new Set(shipments.map((s) => s.updatedById))];
+
+      await Promise.all([
+        ...pickupIds.map((id) => context.locationLoader.load(id)),
+        ...deliveryIds.map((id) => context.locationLoader.load(id)),
+        ...createdByIds.map((id) => context.userLoader.load(id)),
+        ...updatedByIds.map((id) => context.userLoader.load(id)),
+      ]);
+
+      // Attach relations for response (DataLoader cached)
+      const withRelations = shipments.map((s) => ({
+        ...s,
+        pickupLocation: context.locationLoader.load(s.pickupLocationId),
+        deliveryLocation: context.locationLoader.load(s.deliveryLocationId),
+        createdBy: context.userLoader.load(s.createdById),
+        updatedBy: context.userLoader.load(s.updatedById),
+      }));
+
+      const shipmentsWithData = await Promise.all(
+        withRelations.map(async (s) => ({
+          ...s,
+          pickupLocation: await s.pickupLocation,
+          deliveryLocation: await s.deliveryLocation,
+          createdBy: await s.createdBy,
+          updatedBy: await s.updatedBy,
+        }))
+      );
+
       const totalPages = Math.ceil(totalCount / limit);
 
       return {
-        edges: shipments.map((shipment) => ({
+        edges: shipmentsWithData.map((shipment) => ({
           node: shipment,
           cursor: Buffer.from(shipment.id).toString('base64'),
         })),
