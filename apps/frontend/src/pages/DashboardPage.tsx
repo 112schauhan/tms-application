@@ -5,9 +5,12 @@ import { Link } from 'react-router-dom';
 interface ShipmentStats {
   total: number;
   pending: number;
+  pickedUp: number;
   inTransit: number;
+  outForDelivery: number;
   delivered: number;
   cancelled: number;
+  onHold: number;
   averageRate: number;
 }
 

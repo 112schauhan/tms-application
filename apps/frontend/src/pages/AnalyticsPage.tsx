@@ -1,31 +1,39 @@
 import { useQuery } from '@apollo/client/react';
-import { GET_SHIPMENT_STATS, GET_SHIPMENTS } from '../graphql/operations';
+import { GET_SHIPMENT_STATS } from '../graphql/operations';
 import { Link } from 'react-router-dom';
 import { BarChart3, TrendingUp, Package, DollarSign } from 'lucide-react';
 
 interface ShipmentStats {
   total: number;
   pending: number;
+  pickedUp: number;
   inTransit: number;
+  outForDelivery: number;
   delivered: number;
   cancelled: number;
+  onHold: number;
   averageRate: number;
+}
+
+// Build status counts from shipmentStats (single source of truth, matches Total Shipments)
+function getStatusCounts(stats: ShipmentStats | undefined): Record<string, number> {
+  if (!stats) return {};
+  return {
+    PENDING: stats.pending,
+    PICKED_UP: stats.pickedUp,
+    IN_TRANSIT: stats.inTransit,
+    OUT_FOR_DELIVERY: stats.outForDelivery,
+    DELIVERED: stats.delivered,
+    CANCELLED: stats.cancelled,
+    ON_HOLD: stats.onHold,
+  };
 }
 
 export default function AnalyticsPage() {
   const { data, loading } = useQuery<{ shipmentStats: ShipmentStats }>(GET_SHIPMENT_STATS);
-  const { data: shipmentsData } = useQuery<{
-    shipments: { edges: { node: { status: string } }[] };
-  }>(GET_SHIPMENTS, {
-    variables: { pagination: { limit: 100 }, sort: { field: 'CREATED_AT', order: 'DESC' } },
-  });
 
   const stats = data?.shipmentStats;
-  const shipments = shipmentsData?.shipments?.edges?.map((e) => e.node) ?? [];
-  const statusCounts = shipments.reduce((acc, s) => {
-    acc[s.status] = (acc[s.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const statusCounts = getStatusCounts(stats);
   const maxCount = Math.max(...Object.values(statusCounts), 1);
 
   if (loading) {
@@ -99,26 +107,29 @@ export default function AnalyticsPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">Status Distribution</h2>
-          <p className="text-sm text-gray-500">Shipments by status (last 100)</p>
+          <p className="text-sm text-gray-500">Shipments by status (all shipments)</p>
         </div>
         <div className="p-6">
-          <div className="space-y-4">
-            {Object.entries(statusCounts).map(([status, count]) => (
-              <div key={status} className="flex items-center gap-4">
-                <span className="w-28 text-sm text-gray-600">{status.replace(/_/g, ' ')}</span>
-                <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg transition-all"
-                    style={{ width: `${(count / maxCount) * 100}%` }}
-                  />
-                </div>
-                <span className="w-8 text-sm font-medium text-gray-900">{count}</span>
-              </div>
-            ))}
-            {Object.keys(statusCounts).length === 0 && (
-              <p className="text-gray-500 text-center py-8">No shipment data yet</p>
-            )}
-          </div>
+          {stats?.total === 0 ? (
+            <p className="text-gray-500 text-center py-8">No shipment data yet</p>
+          ) : (
+            <div className="space-y-4">
+              {Object.entries(statusCounts)
+                .filter(([, count]) => count > 0)
+                .map(([status, count]) => (
+                  <div key={status} className="flex items-center gap-4">
+                    <span className="w-28 text-sm text-gray-600">{status.replace(/_/g, ' ')}</span>
+                    <div className="flex-1 h-8 bg-gray-100 rounded-lg overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg transition-all"
+                        style={{ width: `${(count / maxCount) * 100}%` }}
+                      />
+                    </div>
+                    <span className="w-8 text-sm font-medium text-gray-900">{count}</span>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
           <Link

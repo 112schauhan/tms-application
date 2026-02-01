@@ -127,9 +127,12 @@ export const GET_SHIPMENT_STATS = gql`
     shipmentStats {
       total
       pending
+      pickedUp
       inTransit
+      outForDelivery
       delivered
       cancelled
+      onHold
       averageRate
     }
   }

@@ -2,7 +2,7 @@ import { GraphQLContext } from '../../types/context.js';
 import { GraphQLError } from 'graphql';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import type { ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
+import { ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
 import { env } from '../../config/environment.js';
 
 // Helper to generate tracking number
@@ -255,27 +255,34 @@ export const resolvers = {
       return shipment;
     },
 
-    // Get shipment statistics
+    // Get shipment statistics (single source of truth for counts)
+    // Uses groupBy to avoid querying enum values that may not exist in the DB yet
     shipmentStats: async (_: unknown, __: unknown, context: GraphQLContext) => {
       requireAuth(context);
 
-      const [total, pending, inTransit, delivered, cancelled, avgRate] = await Promise.all([
+      const [total, statusCounts, avgRate] = await Promise.all([
         context.prisma.shipment.count(),
-        context.prisma.shipment.count({ where: { status: 'PENDING' } }),
-        context.prisma.shipment.count({ where: { status: 'IN_TRANSIT' } }),
-        context.prisma.shipment.count({ where: { status: 'DELIVERED' } }),
-        context.prisma.shipment.count({ where: { status: 'CANCELLED' } }),
-        context.prisma.shipment.aggregate({
-          _avg: { rate: true },
+        context.prisma.shipment.groupBy({
+          by: ['status'],
+          _count: { status: true },
         }),
+        context.prisma.shipment.aggregate({ _avg: { rate: true } }),
       ]);
+
+      const byStatus = Object.fromEntries(
+        statusCounts.map((r) => [r.status, r._count.status])
+      );
+      const get = (s: string) => byStatus[s] ?? 0;
 
       return {
         total,
-        pending,
-        inTransit,
-        delivered,
-        cancelled,
+        pending: get('PENDING'),
+        pickedUp: get('PICKED_UP'),
+        inTransit: get('IN_TRANSIT'),
+        outForDelivery: get('OUT_FOR_DELIVERY'),
+        delivered: get('DELIVERED'),
+        cancelled: get('CANCELLED'),
+        onHold: get('ON_HOLD'),
         averageRate: avgRate._avg.rate || 0,
       };
     },

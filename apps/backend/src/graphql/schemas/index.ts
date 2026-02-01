@@ -1,4 +1,4 @@
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 
 export const typeDefs = gql`
   # ============== SCALARS ==============
@@ -129,9 +129,12 @@ export const typeDefs = gql`
   type ShipmentStats {
     total: Int!
     pending: Int!
+    pickedUp: Int!
     inTransit: Int!
+    outForDelivery: Int!
     delivered: Int!
     cancelled: Int!
+    onHold: Int!
     averageRate: Float!
   }
 
