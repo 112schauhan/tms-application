@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { GET_SHIPMENTS } from '../graphql/operations';
 import ShipmentGrid from '../components/shipments/ShipmentGrid';
 import ShipmentTile from '../components/shipments/ShipmentTile';
+import ExchangeRateWidget from '../components/widgets/ExchangeRateWidget';
 
 type ViewMode = 'grid' | 'tile';
 
@@ -76,7 +77,16 @@ export default function ShipmentsPage() {
     },
   });
 
-  const shipments: Shipment[] = data?.shipments?.edges?.map((edge) => edge.node) || [];
+  // Deduplicate by id to avoid "Encountered two children with the same key" (e.g. from Apollo merge)
+  const shipments: Shipment[] = (() => {
+    const nodes = data?.shipments?.edges?.map((edge) => edge.node) || [];
+    const seen = new Set<string>();
+    return nodes.filter((s) => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  })();
   const pageInfo = data?.shipments?.pageInfo;
 
   const handleStatusChange = (status: string) => {
@@ -107,23 +117,26 @@ export default function ShipmentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Header + Exchange Rate + New Shipment */}
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Shipments</h1>
           <p className="text-gray-500 mt-1">
             {pageInfo?.totalCount || 0} total shipments
           </p>
         </div>
-        <Link
-          to="/shipments/new"
-          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Shipment
-        </Link>
+        <div className="lg:w-72 flex flex-col gap-4 flex-shrink-0">
+          <ExchangeRateWidget />
+          <Link
+            to="/shipments/new"
+            className="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Shipment
+          </Link>
+        </div>
       </div>
 
       {/* Filters & Controls */}
