@@ -56,8 +56,11 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}>
-      <span>{statusIcons[status] || '📦'}</span>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${statusColors[status] || 'bg-gray-100 text-gray-800'}`}
+      title={status.replace(/_/g, ' ')}
+    >
+      <span className="hidden sm:inline">{statusIcons[status] || '📦'}</span>
       {status.replace(/_/g, ' ')}
     </span>
   );
@@ -174,25 +177,46 @@ function TileCard({ shipment }: { shipment: Shipment }) {
 
   return (
     <div
-      className={`relative bg-white rounded-2xl shadow-sm border hover:shadow-md transition-all ${
+      className={`relative bg-white rounded-2xl shadow-sm border hover:shadow-md transition-all overflow-hidden ${
         shipment.isFlagged ? 'border-red-200 bg-red-50' : 'border-gray-100'
       }`}
     >
-      {/* Bun button - action menu */}
-      <div className="absolute top-3 right-3 z-10" ref={menuRef}>
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setMenuOpen((v) => !v);
-          }}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-          title="Actions"
-        >
-          <MoreVertical className="w-5 h-5" />
-        </button>
+      <Link to={`/shipments/${shipment.id}`} className="block p-4 sm:p-5 md:p-6">
+        {/* Header: tracking number + status + actions in a clear flex row */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              {shipment.isFlagged && <span className="flex-shrink-0 text-red-500">🚩</span>}
+              <span
+                className="font-semibold text-gray-900 truncate block"
+                title={shipment.trackingNumber}
+              >
+                {shipment.trackingNumber}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0" ref={menuRef}>
+            <StatusBadge status={shipment.status} />
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMenuOpen((v) => !v);
+              }}
+              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0"
+              title="Actions"
+            >
+              <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Action menu dropdown */}
         {menuOpen && (
-          <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
+          <div
+            className="absolute right-4 top-12 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Link
               to={`/shipments/${shipment.id}`}
               onClick={() => setMenuOpen(false)}
@@ -232,54 +256,50 @@ function TileCard({ shipment }: { shipment: Shipment }) {
             )}
           </div>
         )}
-      </div>
-
-      <Link to={`/shipments/${shipment.id}`} className="block p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4 pr-8">
-          <div className="flex items-center gap-2">
-            {shipment.isFlagged && <span className="text-red-500">🚩</span>}
-            <span className="font-semibold text-gray-900">{shipment.trackingNumber}</span>
-          </div>
-          <StatusBadge status={shipment.status} />
-        </div>
 
         {/* Route */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1">
+        <div className="flex items-center gap-2 sm:gap-3 mb-4">
+          <div className="flex-1 min-w-0">
             <p className="text-xs text-gray-500 uppercase">From</p>
-            <p className="text-sm font-medium text-gray-900">{shipment.pickupLocation.city}</p>
+            <p className="text-sm font-medium text-gray-900 truncate">{shipment.pickupLocation.city}</p>
             <p className="text-xs text-gray-500">{shipment.pickupLocation.state}</p>
           </div>
           <div className="flex-shrink-0">
-            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
           </div>
-          <div className="flex-1 text-right">
+          <div className="flex-1 min-w-0 text-right">
             <p className="text-xs text-gray-500 uppercase">To</p>
-            <p className="text-sm font-medium text-gray-900">{shipment.deliveryLocation.city}</p>
+            <p className="text-sm font-medium text-gray-900 truncate">{shipment.deliveryLocation.city}</p>
             <p className="text-xs text-gray-500">{shipment.deliveryLocation.state}</p>
           </div>
         </div>
 
-        {/* Details */}
-        <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4 text-sm">
-          <div>
+        {/* Details grid with proper truncation */}
+        <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:gap-4 text-sm">
+          <div className="min-w-0">
             <p className="text-gray-500">Carrier</p>
-            <p className="font-medium text-gray-900">{shipment.carrierName || '—'}</p>
+            <p className="font-medium text-gray-900 truncate" title={shipment.carrierName || undefined}>
+              {shipment.carrierName || '—'}
+            </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-gray-500">Rate</p>
             <p className="font-medium text-gray-900">
               {shipment.rate ? `$${shipment.rate.toFixed(2)}` : '—'}
             </p>
           </div>
-          <div>
+          <div className="min-w-0 overflow-hidden">
             <p className="text-gray-500">Shipper</p>
-            <p className="font-medium text-gray-900 truncate">{shipment.shipperName}</p>
+            <p
+              className="font-medium text-gray-900 truncate block"
+              title={shipment.shipperName}
+            >
+              {shipment.shipperName}
+            </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-gray-500">ETA</p>
             <p className="font-medium text-gray-900">
               {shipment.estimatedDelivery
