@@ -34,7 +34,7 @@ export default function SettingsPage() {
         <p className="text-gray-500 mt-1">Admin settings and account preferences</p>
       </div>
 
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-6 max-w-full">
         {/* Admin Settings Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">

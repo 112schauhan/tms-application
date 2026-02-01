@@ -312,7 +312,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             {(expandedMenus.has('/shipments') || expandedMenus.has('/analytics')) && (
               <div className="absolute left-0 right-0 top-full z-50 mt-0 flex gap-4 px-4 sm:px-6 lg:px-8 py-3 bg-white border-b border-gray-100 shadow-lg">
                 {expandedMenus.has('/shipments') && (
-                  <div className="flex flex-col gap-1 min-w-[160px]">
+                  <div className="flex flex-col gap-1 min-w-[160px] w-full">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 py-1">Shipments</span>
                     {(navItems.find((n) => n.to === '/shipments')?.children ?? []).map((sub: NavSubItem) => {
                       const isSubActive = location.pathname === sub.to;
