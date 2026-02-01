@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Package, Mail, Lock, User, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Package, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const { login, register } = useAuth();
+
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,11 +19,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        await login(email, password);
-      } else {
-        await register(email, password, firstName, lastName);
-      }
+      await login(email, password);
       navigate('/dashboard');
     } catch (err: any) {
       const message = err?.graphQLErrors?.[0]?.message || err?.message || 'An error occurred. Please try again.';
@@ -47,12 +40,10 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-3 tracking-tight">
-            {isLogin ? 'Welcome back' : 'Create account'}
+            Welcome back
           </h1>
           <p className="text-lg text-gray-600">
-            {isLogin
-              ? 'Sign in to your TMS account'
-              : 'Get started with your free account'}
+            Sign in to your TMS account
           </p>
         </div>
 
@@ -66,45 +57,6 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {!isLogin && (
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-semibold text-gray-800 mb-2">
-                    First name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required={!isLogin}
-                      className="w-full pl-14 pr-5 py-4 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
-                      placeholder="John"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-semibold text-gray-800 mb-2">
-                    Last name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required={!isLogin}
-                      className="w-full pl-14 pr-5 py-4 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
-                      placeholder="Doe"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-2">
                 Email address
@@ -160,19 +112,17 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  {isLogin ? 'Signing in...' : 'Creating account...'}
+                  Signing in...
                 </span>
               ) : (
-                <span>{isLogin ? 'Sign in' : 'Create account'}</span>
+                <span>Sign in</span>
               )}
             </button>
           </form>
 
-
           {/* Demo credentials */}
-          {isLogin && (
-            <div className="mt-14 pt-12 border-t border-gray-200">
-              <div className="p-6 sm:p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-100">
+          <div className="mt-14 pt-12 border-t border-gray-200">
+            <div className="p-6 sm:p-8 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-100">
                 <p className="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wide">Demo Credentials</p>
                 <div className="space-y-4 text-sm text-gray-700">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white p-4 rounded-xl shadow-sm">
@@ -190,9 +140,8 @@ export default function LoginPage() {
                   </div>
                 </div>
               </div>
-              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
