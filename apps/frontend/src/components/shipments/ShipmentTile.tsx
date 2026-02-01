@@ -211,52 +211,6 @@ function TileCard({ shipment }: { shipment: Shipment }) {
           </div>
         </div>
 
-        {/* Action menu dropdown */}
-        {menuOpen && (
-          <div
-            className="absolute right-4 top-12 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Link
-              to={`/shipments/${shipment.id}`}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              View details
-            </Link>
-            <Link
-              to={`/shipments/${shipment.id}/edit`}
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <Edit className="w-4 h-4" /> Edit
-            </Link>
-            {shipment.isFlagged ? (
-              <button
-                onClick={() => { handleUnflag(); }}
-                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <X className="w-4 h-4" /> Remove flag
-              </button>
-            ) : (
-              <button
-                onClick={() => { setFlagModalOpen(true); }}
-                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <Flag className="w-4 h-4" /> Flag
-              </button>
-            )}
-            {isAdmin && (
-              <button
-                onClick={() => { setDeleteConfirmOpen(true); }}
-                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-              >
-                <Trash2 className="w-4 h-4" /> Delete
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Route */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4">
           <div className="flex-1 min-w-0">
@@ -310,6 +264,52 @@ function TileCard({ shipment }: { shipment: Shipment }) {
           </div>
         </div>
       </Link>
+
+      {/* Action menu dropdown - outside Link to avoid nested <a> tags */}
+      {menuOpen && (
+        <div
+          className="absolute right-4 top-12 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Link
+            to={`/shipments/${shipment.id}`}
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            View details
+          </Link>
+          <Link
+            to={`/shipments/${shipment.id}/edit`}
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <Edit className="w-4 h-4" /> Edit
+          </Link>
+          {shipment.isFlagged ? (
+            <button
+              onClick={() => { handleUnflag(); }}
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <X className="w-4 h-4" /> Remove flag
+            </button>
+          ) : (
+            <button
+              onClick={() => { setFlagModalOpen(true); }}
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Flag className="w-4 h-4" /> Flag
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => { setDeleteConfirmOpen(true); }}
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Flag modal */}
       {flagModalOpen && (
