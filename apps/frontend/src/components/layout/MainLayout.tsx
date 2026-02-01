@@ -10,8 +10,6 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  Bell,
-  Search,
   ChevronDown,
   List,
   PlusCircle,
