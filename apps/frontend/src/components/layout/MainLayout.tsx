@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
       { label: 'Reports', to: '/analytics/reports', icon: FileText },
     ],
   },
-  { label: 'Settings', to: '/settings', icon: Settings },
+  { label: 'Settings', to: '/settings', icon: Settings, adminOnly: true },
 ];
 
 interface MainLayoutProps {

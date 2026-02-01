@@ -788,5 +788,92 @@ export const resolvers = {
         });
       }
     },
+
+    // Create user (admin only)
+    createUser: async (_: unknown, { input }: { input: any }, context: GraphQLContext) => {
+      requireAdmin(context);
+
+      const { email, password, firstName, lastName, role = 'EMPLOYEE' } = input;
+
+      const existingUser = await context.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        throw new GraphQLError('User with this email already exists', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      return context.prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          role: role as 'ADMIN' | 'EMPLOYEE',
+          isActive: true,
+        },
+      });
+    },
+
+    // Update user (admin only)
+    updateUser: async (
+      _: unknown,
+      { id, input }: { id: string; input: any },
+      context: GraphQLContext
+    ) => {
+      requireAdmin(context);
+
+      const existingUser = await context.prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!existingUser) {
+        throw new GraphQLError('User not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      const updateData: any = {};
+      if (input.firstName !== undefined) updateData.firstName = input.firstName;
+      if (input.lastName !== undefined) updateData.lastName = input.lastName;
+      if (input.role !== undefined) updateData.role = input.role;
+      if (input.isActive !== undefined) updateData.isActive = input.isActive;
+
+      return context.prisma.user.update({
+        where: { id },
+        data: updateData,
+      });
+    },
+
+    // Delete user (admin only)
+    deleteUser: async (_: unknown, { id }: { id: string }, context: GraphQLContext) => {
+      const admin = requireAdmin(context);
+
+      if (id === admin.id) {
+        throw new GraphQLError('You cannot delete your own account', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      const existingUser = await context.prisma.user.findUnique({
+        where: { id },
+      });
+
+      if (!existingUser) {
+        throw new GraphQLError('User not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      await context.prisma.user.delete({
+        where: { id },
+      });
+
+      return true;
+    },
   },
 };

@@ -237,6 +237,21 @@ export const typeDefs = gql`
     password: String!
   }
 
+  input CreateUserInput {
+    email: String!
+    password: String!
+    firstName: String!
+    lastName: String!
+    role: UserRole = EMPLOYEE
+  }
+
+  input UpdateUserInput {
+    firstName: String
+    lastName: String
+    role: UserRole
+    isActive: Boolean
+  }
+
   # ============== AUTH TYPES ==============
   type AuthPayload {
     accessToken: String!
@@ -290,5 +305,10 @@ export const typeDefs = gql`
     logout: Boolean!
     
     refreshToken(token: String!): AuthPayload!
+
+    # Users (admin only)
+    createUser(input: CreateUserInput!): User!
+    updateUser(id: ID!, input: UpdateUserInput!): User!
+    deleteUser(id: ID!): Boolean!
   }
 `;

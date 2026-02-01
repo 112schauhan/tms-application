@@ -153,6 +153,15 @@ export const GET_USERS = gql`
   }
 `;
 
+export const GET_USER = gql`
+  ${USER_FRAGMENT}
+  query GetUser($id: ID!) {
+    user(id: $id) {
+      ...UserFragment
+    }
+  }
+`;
+
 // Mutations
 export const LOGIN = gql`
   ${USER_FRAGMENT}
@@ -234,5 +243,29 @@ export const UNFLAG_SHIPMENT = gql`
     unflagShipment(id: $id) {
       ...ShipmentFragment
     }
+  }
+`;
+
+export const CREATE_USER = gql`
+  ${USER_FRAGMENT}
+  mutation CreateUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+      ...UserFragment
+    }
+  }
+`;
+
+export const UPDATE_USER = gql`
+  ${USER_FRAGMENT}
+  mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
+    updateUser(id: $id, input: $input) {
+      ...UserFragment
+    }
+  }
+`;
+
+export const DELETE_USER = gql`
+  mutation DeleteUser($id: ID!) {
+    deleteUser(id: $id)
   }
 `;
