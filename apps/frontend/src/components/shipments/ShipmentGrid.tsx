@@ -56,9 +56,9 @@ function LoadingSkeleton() {
         <table className="min-w-full">
           <thead>
             <tr className="border-b border-gray-200">
-              {[...Array(7)].map((_, i) => (
-                <th key={i} className="px-6 py-3">
-                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+              {[...Array(11)].map((_, i) => (
+                <th key={i} className="px-4 py-3">
+                  <div className="h-4 bg-gray-200 rounded w-16"></div>
                 </th>
               ))}
             </tr>
@@ -66,8 +66,8 @@ function LoadingSkeleton() {
           <tbody>
             {[...Array(5)].map((_, i) => (
               <tr key={i} className="border-b border-gray-100">
-                {[...Array(7)].map((_, j) => (
-                  <td key={j} className="px-6 py-4">
+                {[...Array(11)].map((_, j) => (
+                  <td key={j} className="px-4 py-4">
                     <div className="h-4 bg-gray-100 rounded w-full"></div>
                   </td>
                 ))}
@@ -106,44 +106,53 @@ export default function ShipmentGrid({ shipments, loading }: ShipmentGridProps) 
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Tracking #
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Shipper
+            </th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Consignee
+            </th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Origin
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Destination
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Carrier
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Rate
             </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Pickup
+            </th>
+            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               ETA
             </th>
-            <th scope="col" className="relative px-6 py-3">
+            <th scope="col" className="relative px-4 py-3">
               <span className="sr-only">Actions</span>
             </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {shipments.map((shipment) => (
-            <tr 
-              key={shipment.id} 
+          {shipments.map((shipment, index) => (
+            <tr
+              key={`${shipment.id}-${index}`}
               className={`hover:bg-gray-50 transition-colors ${shipment.isFlagged ? 'bg-red-50' : ''}`}
             >
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="px-4 py-4 whitespace-nowrap">
                 <div className="flex items-center">
                   {shipment.isFlagged && (
                     <span className="mr-2 text-red-500" title="Flagged">🚩</span>
                   )}
-                  <Link 
+                  <Link
                     to={`/shipments/${shipment.id}`}
                     className="text-sm font-medium text-blue-600 hover:text-blue-800"
                   >
@@ -151,40 +160,40 @@ export default function ShipmentGrid({ shipments, loading }: ShipmentGridProps) 
                   </Link>
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="px-4 py-4 whitespace-nowrap">
                 <StatusBadge status={shipment.status} />
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 max-w-[120px] truncate" title={shipment.shipperName}>
+                {shipment.shipperName}
+              </td>
+              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 max-w-[120px] truncate" title={shipment.consigneeName}>
+                {shipment.consigneeName}
+              </td>
+              <td className="px-4 py-4 whitespace-nowrap">
                 <div className="text-sm text-gray-900">{shipment.pickupLocation.city}</div>
                 <div className="text-xs text-gray-500">{shipment.pickupLocation.state}, {shipment.pickupLocation.country}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="px-4 py-4 whitespace-nowrap">
                 <div className="text-sm text-gray-900">{shipment.deliveryLocation.city}</div>
                 <div className="text-xs text-gray-500">{shipment.deliveryLocation.state}, {shipment.deliveryLocation.country}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                 {shipment.carrierName || '—'}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                 {shipment.rate ? `${shipment.currency || '$'}${shipment.rate.toFixed(2)}` : '—'}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {shipment.estimatedDelivery 
-                  ? new Date(shipment.estimatedDelivery).toLocaleDateString()
-                  : '—'
-                }
+              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                {shipment.pickupDate ? new Date(shipment.pickupDate).toLocaleDateString() : '—'}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <Link 
-                  to={`/shipments/${shipment.id}`}
-                  className="text-blue-600 hover:text-blue-900 mr-4"
-                >
+              <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                {shipment.estimatedDelivery ? new Date(shipment.estimatedDelivery).toLocaleDateString() : '—'}
+              </td>
+              <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <Link to={`/shipments/${shipment.id}`} className="text-blue-600 hover:text-blue-900 mr-3">
                   View
                 </Link>
-                <Link 
-                  to={`/shipments/${shipment.id}/edit`}
-                  className="text-indigo-600 hover:text-indigo-900"
-                >
+                <Link to={`/shipments/${shipment.id}/edit`} className="text-indigo-600 hover:text-indigo-900">
                   Edit
                 </Link>
               </td>
