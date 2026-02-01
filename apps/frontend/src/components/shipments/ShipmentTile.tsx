@@ -1,4 +1,10 @@
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useMutation } from '@apollo/client/react';
+import { MoreVertical, Edit, Flag, Trash2, X } from 'lucide-react';
+import { FLAG_SHIPMENT, UNFLAG_SHIPMENT, DELETE_SHIPMENT } from '../../graphql/operations';
+import { useAuth } from '../../contexts/AuthContext';
+import { GET_SHIPMENTS } from '../../graphql/operations';
 
 interface Location {
   city: string;
@@ -100,72 +106,226 @@ export default function ShipmentTile({ shipments, loading }: ShipmentTileProps) 
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {shipments.map((shipment) => (
-        <Link
-          key={shipment.id}
-          to={`/shipments/${shipment.id}`}
-          className={`block bg-white rounded-2xl shadow-sm border hover:shadow-md transition-all ${
-            shipment.isFlagged ? 'border-red-200 bg-red-50' : 'border-gray-100'
-          }`}
+      {shipments.map((shipment, index) => (
+        <TileCard key={`${shipment.id}-${index}`} shipment={shipment} />
+      ))}
+    </div>
+  );
+}
+
+function TileCard({ shipment }: { shipment: Shipment }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [flagModalOpen, setFlagModalOpen] = useState(false);
+  const [flagReason, setFlagReason] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { isAdmin } = useAuth();
+
+  const [flagShipment] = useMutation(FLAG_SHIPMENT, {
+    refetchQueries: [{ query: GET_SHIPMENTS }],
+  });
+  const [unflagShipment] = useMutation(UNFLAG_SHIPMENT, {
+    refetchQueries: [{ query: GET_SHIPMENTS }],
+  });
+  const [deleteShipment] = useMutation(DELETE_SHIPMENT, {
+    refetchQueries: [{ query: GET_SHIPMENTS }],
+  });
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleFlag = async () => {
+    if (!flagReason.trim()) return;
+    try {
+      await flagShipment({ variables: { id: shipment.id, reason: flagReason } });
+      setFlagModalOpen(false);
+      setFlagReason('');
+      setMenuOpen(false);
+    } catch (err) {
+      console.error('Failed to flag:', err);
+    }
+  };
+
+  const handleUnflag = async () => {
+    try {
+      await unflagShipment({ variables: { id: shipment.id } });
+      setMenuOpen(false);
+    } catch (err) {
+      console.error('Failed to unflag:', err);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteShipment({ variables: { id: shipment.id } });
+      setDeleteConfirmOpen(false);
+      setMenuOpen(false);
+    } catch (err) {
+      console.error('Failed to delete:', err);
+    }
+  };
+
+  return (
+    <div
+      className={`relative bg-white rounded-2xl shadow-sm border hover:shadow-md transition-all ${
+        shipment.isFlagged ? 'border-red-200 bg-red-50' : 'border-gray-100'
+      }`}
+    >
+      {/* Bun button - action menu */}
+      <div className="absolute top-3 right-3 z-10" ref={menuRef}>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setMenuOpen((v) => !v);
+          }}
+          className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+          title="Actions"
         >
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                {shipment.isFlagged && <span className="text-red-500">🚩</span>}
-                <span className="font-semibold text-gray-900">{shipment.trackingNumber}</span>
-              </div>
-              <StatusBadge status={shipment.status} />
-            </div>
+          <MoreVertical className="w-5 h-5" />
+        </button>
+        {menuOpen && (
+          <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20">
+            <Link
+              to={`/shipments/${shipment.id}`}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              View details
+            </Link>
+            <Link
+              to={`/shipments/${shipment.id}/edit`}
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Edit className="w-4 h-4" /> Edit
+            </Link>
+            {shipment.isFlagged ? (
+              <button
+                onClick={() => { handleUnflag(); }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <X className="w-4 h-4" /> Remove flag
+              </button>
+            ) : (
+              <button
+                onClick={() => { setFlagModalOpen(true); }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <Flag className="w-4 h-4" /> Flag
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => { setDeleteConfirmOpen(true); }}
+                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4" /> Delete
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
-            {/* Route */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex-1">
-                <p className="text-xs text-gray-500 uppercase">From</p>
-                <p className="text-sm font-medium text-gray-900">{shipment.pickupLocation.city}</p>
-                <p className="text-xs text-gray-500">{shipment.pickupLocation.state}</p>
-              </div>
-              <div className="flex-shrink-0">
-                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </div>
-              <div className="flex-1 text-right">
-                <p className="text-xs text-gray-500 uppercase">To</p>
-                <p className="text-sm font-medium text-gray-900">{shipment.deliveryLocation.city}</p>
-                <p className="text-xs text-gray-500">{shipment.deliveryLocation.state}</p>
-              </div>
-            </div>
+      <Link to={`/shipments/${shipment.id}`} className="block p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 pr-8">
+          <div className="flex items-center gap-2">
+            {shipment.isFlagged && <span className="text-red-500">🚩</span>}
+            <span className="font-semibold text-gray-900">{shipment.trackingNumber}</span>
+          </div>
+          <StatusBadge status={shipment.status} />
+        </div>
 
-            {/* Details */}
-            <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-gray-500">Carrier</p>
-                <p className="font-medium text-gray-900">{shipment.carrierName || '—'}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Rate</p>
-                <p className="font-medium text-gray-900">
-                  {shipment.rate ? `$${shipment.rate.toFixed(2)}` : '—'}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-500">Shipper</p>
-                <p className="font-medium text-gray-900 truncate">{shipment.shipperName}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">ETA</p>
-                <p className="font-medium text-gray-900">
-                  {shipment.estimatedDelivery 
-                    ? new Date(shipment.estimatedDelivery).toLocaleDateString()
-                    : '—'
-                  }
-                </p>
-              </div>
+        {/* Route */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1">
+            <p className="text-xs text-gray-500 uppercase">From</p>
+            <p className="text-sm font-medium text-gray-900">{shipment.pickupLocation.city}</p>
+            <p className="text-xs text-gray-500">{shipment.pickupLocation.state}</p>
+          </div>
+          <div className="flex-shrink-0">
+            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </div>
+          <div className="flex-1 text-right">
+            <p className="text-xs text-gray-500 uppercase">To</p>
+            <p className="text-sm font-medium text-gray-900">{shipment.deliveryLocation.city}</p>
+            <p className="text-xs text-gray-500">{shipment.deliveryLocation.state}</p>
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-gray-500">Carrier</p>
+            <p className="font-medium text-gray-900">{shipment.carrierName || '—'}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Rate</p>
+            <p className="font-medium text-gray-900">
+              {shipment.rate ? `$${shipment.rate.toFixed(2)}` : '—'}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500">Shipper</p>
+            <p className="font-medium text-gray-900 truncate">{shipment.shipperName}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">ETA</p>
+            <p className="font-medium text-gray-900">
+              {shipment.estimatedDelivery
+                ? new Date(shipment.estimatedDelivery).toLocaleDateString()
+                : '—'
+              }
+            </p>
+          </div>
+        </div>
+      </Link>
+
+      {/* Flag modal */}
+      {flagModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setFlagModalOpen(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Flag Shipment</h3>
+            <textarea
+              value={flagReason}
+              onChange={(e) => setFlagReason(e.target.value)}
+              placeholder="Reason for flagging..."
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+              rows={3}
+            />
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setFlagModalOpen(false)} className="flex-1 px-4 py-2 bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={handleFlag} disabled={!flagReason.trim()} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg disabled:opacity-50">
+                Flag
+              </button>
             </div>
           </div>
-        </Link>
-      ))}
+        </div>
+      )}
+
+      {/* Delete confirm */}
+      {deleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDeleteConfirmOpen(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-2">Delete Shipment</h3>
+            <p className="text-gray-600 mb-4">Are you sure? This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirmOpen(false)} className="flex-1 px-4 py-2 bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={handleDelete} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
