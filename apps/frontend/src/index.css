@@ -31,6 +31,22 @@
   #root {
     min-height: 100vh;
   }
+
+  /* Cursor pointer for all interactive elements */
+  button,
+  a,
+  [role='button'],
+  input[type='submit'],
+  input[type='button'],
+  input[type='reset'] {
+    cursor: pointer;
+  }
+
+  /* Disabled elements should not show pointer */
+  button:disabled,
+  input:disabled {
+    cursor: not-allowed;
+  }
 }
 
 @layer base {
