@@ -54,19 +54,15 @@ export interface GraphQLContext {
 export async function createContext({ req }: { req: Request }): Promise<GraphQLContext> {
   let user: User | null = null;
 
-  // Get token from Authorization header
   const authHeader = req.headers.authorization;
-  
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    
     try {
       const decoded = jwt.verify(
-        token, 
+        token,
         env.jwtSecret
       ) as { userId: string; email: string; role: 'ADMIN' | 'EMPLOYEE' };
-      
-      // Fetch user from database
+
       const dbUser = await prisma.user.findUnique({
         where: { id: decoded.userId },
         select: {
@@ -89,15 +85,11 @@ export async function createContext({ req }: { req: Request }): Promise<GraphQLC
         };
       }
     } catch (error) {
-      // Token is invalid or expired - user stays null
       console.warn('Invalid token:', error instanceof Error ? error.message : 'Unknown error');
     }
   }
 
-  return {
-    prisma,
-    user,
-  };
+  return { prisma, user };
 }
 
 // Graceful shutdown

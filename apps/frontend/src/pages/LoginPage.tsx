@@ -28,7 +28,8 @@ export default function LoginPage() {
       }
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'An error occurred. Please try again.');
+      const message = err?.graphQLErrors?.[0]?.message || err?.message || 'An error occurred. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }

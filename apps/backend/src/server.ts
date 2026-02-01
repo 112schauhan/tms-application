@@ -11,15 +11,33 @@ import rateLimit from 'express-rate-limit';
 import { env } from './config/environment.js';
 import { typeDefs } from './graphql/schemas/index.js';
 import { resolvers } from './graphql/resolvers/index.js';
-import { createContext, GraphQLContext } from './types/context.js';
+import { createContext, GraphQLContext, prisma } from './types/context.js';
+
+// Validate required env at startup
+if (!env.databaseUrl) {
+  console.error('❌ DATABASE_URL is not set. Add it to apps/backend/.env');
+  process.exit(1);
+}
 
 async function startServer() {
   const app = express();
   const httpServer = http.createServer(app);
 
-  // CORS - allow frontend to connect
+  // CORS - allow frontend to connect (localhost and 127.0.0.1 are different origins)
+  const allowedOrigins = [
+    env.frontendUrl,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+  ];
   app.use(cors<cors.CorsRequest>({
-    origin: env.frontendUrl,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g. curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(null, false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -51,7 +69,10 @@ async function startServer() {
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
     introspection: env.nodeEnv !== 'production',
     formatError: (error) => {
-      console.error('GraphQL Error:', error);
+      console.error('GraphQL Error:', error.message);
+      if (error.extensions?.code !== 'UNAUTHENTICATED' && error.extensions?.code !== 'BAD_USER_INPUT') {
+        console.error('Stack:', (error as Error).stack);
+      }
       return {
         message: error.message,
         code: (error.extensions?.code as string) || 'INTERNAL_SERVER_ERROR',
@@ -65,9 +86,16 @@ async function startServer() {
   // Apply GraphQL middleware
   app.use(
     '/graphql',
-    express.json(),
+    express.json({ limit: '1mb' }),
     expressMiddleware(server, {
-      context: createContext,
+      context: async (context) => {
+        try {
+          return await createContext(context);
+        } catch (err) {
+          console.error('Context creation failed:', err);
+          throw err;
+        }
+      },
     }),
   );
 
@@ -78,7 +106,15 @@ async function startServer() {
 
   // Start server
   await new Promise<void>((resolve) => httpServer.listen({ port: env.port }, resolve));
-  
+
+  // Verify database connection
+  try {
+    await prisma.$connect();
+    console.log('✅ Database connected');
+  } catch (dbErr) {
+    console.error('❌ Database connection failed:', dbErr);
+  }
+
   console.log(`🚀 Server ready at http://localhost:${env.port}/graphql`);
   console.log(`📊 Health check at http://localhost:${env.port}/health`);
 }

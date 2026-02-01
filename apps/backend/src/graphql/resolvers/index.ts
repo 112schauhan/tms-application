@@ -631,56 +631,81 @@ export const resolvers = {
       return {
         accessToken,
         refreshToken,
-        user,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
       };
     },
 
     // Login
     login: async (_: unknown, { input }: { input: any }, context: GraphQLContext) => {
-      const { email, password } = input;
+      try {
+        const { email, password } = input;
 
-      const user = await context.prisma.user.findUnique({
-        where: { email },
-      });
+        const user = await context.prisma.user.findUnique({
+          where: { email },
+        });
 
-      if (!user) {
-        throw new GraphQLError('Invalid email or password', {
-          extensions: { code: 'UNAUTHENTICATED' },
+        if (!user) {
+          throw new GraphQLError('Invalid email or password', {
+            extensions: { code: 'UNAUTHENTICATED' },
+          });
+        }
+
+        if (!user.isActive) {
+          throw new GraphQLError('Your account has been deactivated', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+
+        const validPassword = await bcrypt.compare(password, user.password);
+
+        if (!validPassword) {
+          throw new GraphQLError('Invalid email or password', {
+            extensions: { code: 'UNAUTHENTICATED' },
+          });
+        }
+
+        const accessToken = jwt.sign(
+          { userId: user.id, email: user.email, role: user.role },
+          env.jwtSecret,
+          { expiresIn: '15m' }
+        );
+
+        const refreshToken = jwt.sign(
+          { userId: user.id },
+          env.refreshTokenSecret,
+          { expiresIn: '7d' }
+        );
+
+        return {
+          accessToken,
+          refreshToken,
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            isActive: user.isActive,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          },
+        };
+      } catch (error) {
+        if (error instanceof GraphQLError) throw error;
+        console.error('Login error:', error);
+        throw new GraphQLError('Authentication failed. Please check database connection.', {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
         });
       }
-
-      if (!user.isActive) {
-        throw new GraphQLError('Your account has been deactivated', {
-          extensions: { code: 'FORBIDDEN' },
-        });
-      }
-
-      const validPassword = await bcrypt.compare(password, user.password);
-
-      if (!validPassword) {
-        throw new GraphQLError('Invalid email or password', {
-          extensions: { code: 'UNAUTHENTICATED' },
-        });
-      }
-
-      // Generate tokens
-      const accessToken = jwt.sign(
-        { userId: user.id, email: user.email, role: user.role },
-        env.jwtSecret,
-        { expiresIn: '15m' }
-      );
-
-      const refreshToken = jwt.sign(
-        { userId: user.id },
-        env.refreshTokenSecret,
-        { expiresIn: '7d' }
-      );
-
-      return {
-        accessToken,
-        refreshToken,
-        user,
-      };
     },
 
     // Logout

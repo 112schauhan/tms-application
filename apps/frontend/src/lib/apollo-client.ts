@@ -6,10 +6,14 @@ import {
 } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
-import type { GraphQLError } from 'graphql';
+// GraphQL endpoint: VITE_GRAPHQL_URL from .env, or /graphql (proxied via Vite - no CORS)
+const graphqlUri = import.meta.env.VITE_GRAPHQL_URL || '/graphql';
+if (import.meta.env.DEV) {
+  console.log('[Apollo] GraphQL endpoint:', graphqlUri || '(proxy /graphql)');
+}
 
 const httpLink = createHttpLink({
-  uri: import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:4000/graphql',
+  uri: graphqlUri,
   credentials: 'include',
 });
 
@@ -23,24 +27,17 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-const errorLink = onError((errorResponse) => {
-  const { graphQLErrors, networkError } = errorResponse as { 
-    graphQLErrors?: readonly GraphQLError[]; 
-    networkError?: Error 
-  };
-  
+const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach((error) => {
       const { message, locations, path, extensions } = error;
       console.error(
         `[GraphQL error]: Message: ${message}, Location: ${JSON.stringify(locations)}, Path: ${path}`
       );
-      
       // Handle authentication errors
       if (extensions?.code === 'UNAUTHENTICATED') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        // Redirect to login if not already there
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
@@ -51,6 +48,8 @@ const errorLink = onError((errorResponse) => {
   if (networkError) {
     console.error(`[Network error]: ${networkError}`);
   }
+
+  return forward(operation);
 });
 
 export const client = new ApolloClient({

@@ -14,7 +14,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // Proxy GraphQL and health requests to backend when using relative URLs
       '/graphql': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+      '/health': {
         target: 'http://localhost:4000',
         changeOrigin: true,
       },
