@@ -2,7 +2,8 @@ import { GraphQLContext } from '../../types/context.js';
 import { GraphQLError } from 'graphql';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
+import type { ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
+import { env } from '../../config/environment.js';
 
 // Helper to generate tracking number
 function generateTrackingNumber(): string {
@@ -319,11 +320,11 @@ export const resolvers = {
           consigneeEmail: input.consigneeEmail,
           pickupLocationId: pickupLocation.id,
           deliveryLocationId: deliveryLocation.id,
-          carrierName: input.carrierName,
+          carrierName: input.carrierName || 'TBD',
           carrierPhone: input.carrierPhone,
           weight: input.weight,
           dimensionsId,
-          rate: input.rate,
+          rate: input.rate ?? 0,
           currency: input.currency || 'USD',
           status: 'PENDING',
           pickupDate: input.pickupDate ? new Date(input.pickupDate) : null,
@@ -499,7 +500,7 @@ export const resolvers = {
       const shipment = await context.prisma.shipment.update({
         where: { id },
         data: {
-          status,
+          status: status as PrismaShipmentStatus,
           updatedById: user.id,
           actualDelivery: status === 'DELIVERED' ? new Date() : undefined,
         },
@@ -617,13 +618,13 @@ export const resolvers = {
       // Generate tokens
       const accessToken = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
-        process.env.JWT_SECRET || 'your-secret-key',
+        env.jwtSecret,
         { expiresIn: '15m' }
       );
 
       const refreshToken = jwt.sign(
         { userId: user.id },
-        process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret',
+        env.refreshTokenSecret,
         { expiresIn: '7d' }
       );
 
@@ -665,13 +666,13 @@ export const resolvers = {
       // Generate tokens
       const accessToken = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
-        process.env.JWT_SECRET || 'your-secret-key',
+        env.jwtSecret,
         { expiresIn: '15m' }
       );
 
       const refreshToken = jwt.sign(
         { userId: user.id },
-        process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret',
+        env.refreshTokenSecret,
         { expiresIn: '7d' }
       );
 
@@ -697,7 +698,7 @@ export const resolvers = {
       try {
         const decoded = jwt.verify(
           token,
-          process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret'
+          env.refreshTokenSecret
         ) as { userId: string };
 
         const user = await context.prisma.user.findUnique({
@@ -713,13 +714,13 @@ export const resolvers = {
         // Generate new tokens
         const accessToken = jwt.sign(
           { userId: user.id, email: user.email, role: user.role },
-          process.env.JWT_SECRET || 'your-secret-key',
+          env.jwtSecret,
           { expiresIn: '15m' }
         );
 
         const newRefreshToken = jwt.sign(
           { userId: user.id },
-          process.env.REFRESH_TOKEN_SECRET || 'your-refresh-secret',
+          env.refreshTokenSecret,
           { expiresIn: '7d' }
         );
 

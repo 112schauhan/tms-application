@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
+import { env } from './environment.js';
+
 // Prevent multiple instances of Prisma Client in development
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -10,7 +12,7 @@ const globalForPrisma = globalThis as unknown as {
 
 // Create connection pool
 const pool = globalForPrisma.pool ?? new pg.Pool({ 
-  connectionString: process.env.DATABASE_URL 
+  connectionString: env.databaseUrl 
 });
 
 // Create Prisma adapter
@@ -20,13 +22,13 @@ export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === 'development' 
+    log: env.nodeEnv === 'development' 
       ? ['query', 'error', 'warn'] 
       : ['error'],
   });
 
 // In development, save to global to prevent multiple instances
-if (process.env.NODE_ENV !== 'production') {
+if (env.nodeEnv !== 'production') {
   globalForPrisma.prisma = prisma;
   globalForPrisma.pool = pool;
 }
