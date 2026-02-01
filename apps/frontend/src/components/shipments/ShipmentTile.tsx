@@ -181,36 +181,80 @@ function TileCard({ shipment }: { shipment: Shipment }) {
         shipment.isFlagged ? 'border-red-200 bg-red-50' : 'border-gray-100'
       }`}
     >
-      <Link to={`/shipments/${shipment.id}`} className="block p-4 sm:p-5 md:p-6">
-        {/* Header: tracking number + status + actions in a clear flex row */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              {shipment.isFlagged && <span className="flex-shrink-0 text-red-500">🚩</span>}
-              <span
-                className="font-semibold text-gray-900 truncate block"
-                title={shipment.trackingNumber}
-              >
-                {shipment.trackingNumber}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0" ref={menuRef}>
-            <StatusBadge status={shipment.status} />
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setMenuOpen((v) => !v);
-              }}
-              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0"
-              title="Actions"
+      {/* Header row: tracking (in Link) + actions (outside Link so dropdown Links aren't nested) */}
+      <div className="flex items-center gap-3 px-4 sm:px-5 md:px-6 pt-4 sm:pt-5 md:pt-6">
+        <Link to={`/shipments/${shipment.id}`} className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {shipment.isFlagged && <span className="flex-shrink-0 text-red-500">🚩</span>}
+            <span
+              className="font-semibold text-gray-900 truncate block"
+              title={shipment.trackingNumber}
             >
-              <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+              {shipment.trackingNumber}
+            </span>
           </div>
+        </Link>
+        <div className="relative flex items-center gap-1.5 flex-shrink-0" ref={menuRef}>
+          <StatusBadge status={shipment.status} />
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMenuOpen((v) => !v);
+            }}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0"
+            title="Actions"
+          >
+            <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+          {menuOpen && (
+            <div
+              className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Link
+                to={`/shipments/${shipment.id}`}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                View details
+              </Link>
+              <Link
+                to={`/shipments/${shipment.id}/edit`}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <Edit className="w-4 h-4" /> Edit
+              </Link>
+              {shipment.isFlagged ? (
+                <button
+                  onClick={() => { handleUnflag(); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                >
+                  <X className="w-4 h-4" /> Remove flag
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setFlagModalOpen(true); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                >
+                  <Flag className="w-4 h-4" /> Flag
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => { setDeleteConfirmOpen(true); }}
+                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+              )}
+            </div>
+          )}
         </div>
+      </div>
 
+      <Link to={`/shipments/${shipment.id}`} className="block px-4 sm:px-5 md:px-6 pt-4 pb-4 sm:pb-5 md:pb-6">
         {/* Route */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4">
           <div className="flex-1 min-w-0">
@@ -264,52 +308,6 @@ function TileCard({ shipment }: { shipment: Shipment }) {
           </div>
         </div>
       </Link>
-
-      {/* Action menu dropdown - outside Link to avoid nested <a> tags */}
-      {menuOpen && (
-        <div
-          className="absolute right-4 top-12 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-20"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Link
-            to={`/shipments/${shipment.id}`}
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            View details
-          </Link>
-          <Link
-            to={`/shipments/${shipment.id}/edit`}
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <Edit className="w-4 h-4" /> Edit
-          </Link>
-          {shipment.isFlagged ? (
-            <button
-              onClick={() => { handleUnflag(); }}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <X className="w-4 h-4" /> Remove flag
-            </button>
-          ) : (
-            <button
-              onClick={() => { setFlagModalOpen(true); }}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <Flag className="w-4 h-4" /> Flag
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              onClick={() => { setDeleteConfirmOpen(true); }}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4" /> Delete
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Flag modal */}
       {flagModalOpen && (

@@ -216,7 +216,7 @@ export default function DashboardPage() {
               <Link
                 key={`${shipment.id}-${index}`}
                 to={`/shipments/${shipment.id}`}
-                className="flex items-center px-6 py-4 hover:bg-gray-50 transition-colors"
+                className="flex items-start px-6 py-4 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center">
