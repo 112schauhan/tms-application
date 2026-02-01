@@ -12,20 +12,48 @@ import {
   LogOut,
   Bell,
   Search,
+  ChevronDown,
+  List,
+  PlusCircle,
+  TrendingUp,
+  FileText,
 } from 'lucide-react';
+
+interface NavSubItem {
+  label: string;
+  to: string;
+  icon?: React.ElementType;
+}
 
 interface NavItem {
   label: string;
   to: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  children?: NavSubItem[];
 }
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', to: '/dashboard', icon: Home },
-  { label: 'Shipments', to: '/shipments', icon: Package },
+  {
+    label: 'Shipments',
+    to: '/shipments',
+    icon: Package,
+    children: [
+      { label: 'All Shipments', to: '/shipments', icon: List },
+      { label: 'New Shipment', to: '/shipments/new', icon: PlusCircle },
+    ],
+  },
   { label: 'Users', to: '/users', icon: Users, adminOnly: true },
-  { label: 'Analytics', to: '/analytics', icon: BarChart3 },
+  {
+    label: 'Analytics',
+    to: '/analytics',
+    icon: BarChart3,
+    children: [
+      { label: 'Overview', to: '/analytics', icon: TrendingUp },
+      { label: 'Reports', to: '/analytics/reports', icon: FileText },
+    ],
+  },
   { label: 'Settings', to: '/settings', icon: Settings },
 ];
 
@@ -35,6 +63,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const { user, logout, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,6 +71,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const toggleMenu = (to: string) => {
+    setExpandedMenus((prev) => {
+      const next = new Set<string>();
+      if (prev.has(to)) return next; // Close if already expanded
+      next.add(to); // Expand this one only (hides others)
+      return next;
+    });
   };
 
   const filteredNavItems = navItems.filter(
@@ -83,6 +121,52 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {filteredNavItems.map((item) => {
               const Icon = item.icon;
+              const children = item.children ?? [];
+              const isParentActive =
+                location.pathname === item.to ||
+                children.some((c: NavSubItem) => location.pathname === c.to || location.pathname.startsWith(c.to + '/'));
+              const hasChildren = children.length > 0;
+
+              if (hasChildren) {
+                const isExpanded = expandedMenus.has(item.to);
+                return (
+                  <div key={item.to} className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleMenu(item.to)}
+                      className={`flex w-full items-center px-4 py-3 rounded-lg transition-colors text-left ${
+                        isParentActive && !children.some((c: NavSubItem) => location.pathname === c.to)
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      <span className="font-medium flex-1">{item.label}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
+                    </button>
+                    {isExpanded && children.map((sub: NavSubItem) => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = location.pathname === sub.to;
+                      return (
+                        <Link
+                          key={sub.to}
+                          to={sub.to}
+                          onClick={() => setSidebarOpen(false)}
+                          className={`flex items-center pl-12 pr-4 py-2.5 rounded-lg text-sm transition-colors ${
+                            isSubActive
+                              ? 'bg-blue-50 text-blue-600 font-medium'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          }`}
+                        >
+                          {SubIcon && <SubIcon className="w-4 h-4 mr-2.5 text-gray-400" />}
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                );
+              }
+
               const isActive = location.pathname === item.to;
               return (
                 <Link
@@ -132,7 +216,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top header */}
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 overflow-visible">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
               <button
@@ -177,24 +261,98 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </div>
           </div>
 
-          {/* Horizontal nav (secondary) */}
-          <div className="hidden md:flex items-center h-12 px-4 sm:px-6 lg:px-8 border-t border-gray-100 bg-gray-50 overflow-x-auto">
-            {filteredNavItems.map((item) => {
-              const isActive = location.pathname === item.to;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                    isActive
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+          {/* Horizontal nav (secondary) - wrapper for absolute dropdown positioning */}
+          <div className="relative">
+            <div className="hidden md:flex items-center h-12 px-4 sm:px-6 lg:px-8 border-t border-gray-100 bg-gray-50 overflow-x-auto overflow-y-visible gap-1">
+              {filteredNavItems.map((item) => {
+                const hChildren = item.children ?? [];
+                const isParentActive =
+                  location.pathname === item.to ||
+                  hChildren.some((c: NavSubItem) => location.pathname === c.to || location.pathname.startsWith(c.to + '/'));
+                const hasChildren = hChildren.length > 0;
+
+                if (hasChildren) {
+                  const isExpanded = expandedMenus.has(item.to);
+                  return (
+                    <div key={item.to} className="relative h-12 flex items-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleMenu(item.to)}
+                        className={`flex items-center gap-1 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                          isParentActive
+                            ? 'text-blue-600 border-b-2 border-blue-600'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        {item.label}
+                        <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
+                      </button>
+                    </div>
+                  );
+                }
+
+                const isActive = location.pathname === item.to;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                      isActive
+                        ? 'text-blue-600 border-b-2 border-blue-600'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Absolute positioned sub-options container - below horizontal bar, not in page flow */}
+            {(expandedMenus.has('/shipments') || expandedMenus.has('/analytics')) && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-0 flex gap-4 px-4 sm:px-6 lg:px-8 py-3 bg-white border-b border-gray-100 shadow-lg">
+                {expandedMenus.has('/shipments') && (
+                  <div className="flex flex-col gap-1 min-w-[160px]">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 py-1">Shipments</span>
+                    {(navItems.find((n) => n.to === '/shipments')?.children ?? []).map((sub: NavSubItem) => {
+                      const isSubActive = location.pathname === sub.to;
+                      return (
+                        <Link
+                          key={sub.to}
+                          to={sub.to}
+                          onClick={() => toggleMenu('/shipments')}
+                          className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                            isSubActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+                {expandedMenus.has('/analytics') && (
+                  <div className="flex flex-col gap-1 min-w-[160px]">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2 py-1">Analytics</span>
+                    {(navItems.find((n) => n.to === '/analytics')?.children ?? []).map((sub: NavSubItem) => {
+                      const isSubActive = location.pathname === sub.to;
+                      return (
+                        <Link
+                          key={sub.to}
+                          to={sub.to}
+                          onClick={() => toggleMenu('/analytics')}
+                          className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                            isSubActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {sub.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </header>
 
